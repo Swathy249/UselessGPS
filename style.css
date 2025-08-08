@@ -1,21 +1,20 @@
 * { box-sizing: border-box; font-family: Inter, Arial, sans-serif; }
-body, html { margin: 0; height: 100%; background: #f4f6f8; }
+body, html { margin: 0; height: 100%; background: #f6f7fb; }
 
 #topbar{
   display:flex;
   gap:12px;
   align-items:center;
   padding:10px 12px;
-  background: linear-gradient(90deg,#1f2937,#111827);
+  background: linear-gradient(90deg,#0f1724,#071028);
   color:white;
 }
 .title { font-weight:700; }
-.inputs { display:flex; gap:8px; align-items:center; }
+.inputs { display:flex; gap:8px; align-items:center; margin-left:12px; }
 .inputs input { padding:8px 10px; border-radius:6px; border:none; width:200px; }
 .inputs button { padding:8px 10px; border-radius:6px; border:none; cursor:pointer; background:#ef4444; color:white; font-weight:600; }
-.small { color:#ddd; font-size:13px; margin-left:auto; }
 
-#map { height: calc(100vh - 120px); }
+#map { height: calc(100vh - 120px); margin: 8px 12px 0 12px; border-radius:8px; overflow:hidden; }
 
 #hud {
   display:flex;
@@ -25,25 +24,59 @@ body, html { margin: 0; height: 100%; background: #f4f6f8; }
   background:#fff;
   border-top:1px solid #e5e7eb;
   font-size:14px;
+  margin: 0 12px 12px 12px;
+  border-radius: 0 0 8px 8px;
 }
 #hud > div { color:#111827; }
-#feed { flex:1; text-align:right; color:#374151; }
-#feedText { font-weight:700; margin-left:8px; }
 
+/* Anime popup */
+#anime {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display:flex;
+  align-items:flex-end;
+  gap:10px;
+  pointer-events: none; /* clicks pass through unless needed */
+  z-index: 9999;
+  transform: translateY(20px);
+  transition: transform 300ms ease, opacity 300ms ease;
+  opacity: 0;
+}
+#anime.show { opacity: 1; transform: translateY(0); }
+
+#char { width: 72px; height:72px; pointer-events:auto; }
+#speech {
+  max-width: 260px;
+  background: white;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(2,6,23,0.15);
+  color: #0b1220;
+  font-weight:600;
+  line-height:1.15;
+  pointer-events: auto;
+}
+
+/* small mobile tweak */
+@media (max-width:600px) {
+  #speech { max-width: 160px; font-size:14px; padding:8px; }
+  .inputs input { width:120px; }
+}
+.hidden { display:none; }
+
+/* toast */
 #toast {
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
-  bottom: 26px;
-  background: rgba(0,0,0,0.85);
+  bottom: 110px;
+  background: rgba(0,0,0,0.8);
   color: #fff;
-  padding: 10px 14px;
-  border-radius: 10px;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-weight:600;
   max-width: 85%;
   text-align:center;
+  z-index:9998;
 }
-.hidden { display:none; }
-
-/* small popup tweaks */
-.leaflet-popup-content-wrapper { font-size:13px; }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Useless GPS — Full</title>
+  <title>Useless GPS — Anime Snark</title>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -11,16 +11,13 @@
 </head>
 <body>
   <div id="topbar">
-    <div class="title">Smartly Useless GPS 🧭</div>
+    <div class="title">Useless GPS</div>
     <div class="inputs">
       <input id="startInput" placeholder="Start (e.g. 'Delhi')" />
       <input id="destInput"  placeholder="Destination (e.g. 'Agra')" />
-      <button id="goBtn">Go Straight</button>
+      <button id="goBtn">Get Path</button>
       <button id="simulateBtn" disabled>Simulate</button>
       <button id="resetBtn">Reset</button>
-    </div>
-    <div class="small">
-      <label><input id="snarkToggle" type="checkbox" checked /> Snark feed</label>
     </div>
   </div>
 
@@ -29,8 +26,27 @@
   <div id="hud">
     <div id="distance">Distance: —</div>
     <div id="bearing">Bearing: —</div>
-    <div id="snark">Snark: —</div>
-    <div id="feed">Feed: <span id="feedText">—</span></div>
+  </div>
+
+  <!-- Floating anime character + speech bubble -->
+  <div id="anime" class="hidden" aria-live="polite">
+    <div id="speech"></div>
+    <div id="char">
+      <!-- Inline cute SVG as character -->
+      <svg viewBox="0 0 120 120" width="120" height="120" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1">
+            <stop offset="0" stop-color="#FFB6C1"/><stop offset="1" stop-color="#FFD1DC"/>
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="54" fill="url(#g)" stroke="#000" stroke-opacity="0.06"/>
+        <circle cx="44" cy="52" r="8" fill="#111"/>
+        <circle cx="76" cy="52" r="8" fill="#111"/>
+        <path d="M40 78 q20 12 40 0" stroke="#111" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M20 34 q20 -20 40 -6" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M100 34 q-20 -20 -40 -6" stroke="#222" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </div>
   </div>
 
   <div id="toast" class="hidden"></div>

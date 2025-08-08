@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smartly Useless GPS — Enhanced</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="topbar">
+    <h1>Smartly Useless GPS 🧭</h1>
+
+    <div class="inputs">
+      <input id="startInput" placeholder="Start (e.g. 'Delhi')" />
+      <input id="destInput"  placeholder="Destination (e.g. 'Agra')" />
+      <button id="goBtn">Go Straight</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="small">
+      <label><input id="snarkToggle" type="checkbox" checked /> Snark feed</label>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="hud">
+    <div id="distance">Distance: —</div>
+    <div id="bearing">Bearing: —</div>
+    <div id="snark">Snark: —</div>
+    <div id="feed">Feed: <span id="feedText">—</span></div>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

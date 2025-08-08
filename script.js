@@ -46,8 +46,10 @@ async function onGo(){
     const meters = map.distance([start.lat, start.lon], [dest.lat, dest.lon]);
     const km = (meters/1000).toFixed(2);
     const bearing = calculateBearing(start.lat, start.lon, dest.lat, dest.lon).toFixed(0);
-    el('distance').textContent = `Distance: ${km} km (${Math.round(meters)} m)`;
-    el('bearing').textContent = `Bearing: ${bearing}°`;
+
+    // Update HUD nicely
+    setInfo('distance', `${km} km (${Math.round(meters)} m)`);
+    setInfo('bearing', `${bearing}°`);
 
     // adaptive sampling
     const samples = adaptiveSampleCount(meters);
@@ -268,16 +270,21 @@ function onSimulate(){
   const latlngs = lineLayer.getLatLngs();
   const start = latlngs[0], dest = latlngs[latlngs.length-1];
   const meters = map.distance(start, dest);
-  
-  // Faster duration but smooth enough
-  const durationMs = Math.min(15000, Math.max(5000, meters * 1.5)); 
-  const steps = Math.max(60, Math.round(durationMs / 30)); 
+  const km = meters / 1000;
+  const durationMs = Math.min(30000, Math.max(4000, meters * 2)); // speed heuristic
+  const steps = Math.max(80, Math.round(durationMs / 25));
   let step = 0;
 
   simulateMarker = L.circleMarker(start, {radius:8, color:'#0ea5a4', fillColor:'#34d399', fillOpacity:0.9}).addTo(map);
 
-  let lastPopupTime = 0;
-  const popupCooldown = 3000; // 3 sec cooldown
+  // Adaptive number of messages: 1 every ~10 km, min 3, max 6
+  const minMsgs = 3, maxMsgs = 6;
+  const msgCount = Math.min(maxMsgs, Math.max(minMsgs, Math.ceil(km / 10)));
+  const triggerSteps = [];
+  for(let i = 1; i <= msgCount; i++) {
+    triggerSteps.push(Math.floor((steps * i) / (msgCount + 1)));
+  }
+  let nextTriggerIndex = 0;
 
   simulateTimer = setInterval(() => {
     const t = step / steps;
@@ -285,119 +292,166 @@ function onSimulate(){
     const curLon = start.lng + (dest.lng - start.lng) * t;
     simulateMarker.setLatLng([curLat, curLon]);
 
-    // Find samples close enough to current position (within radius)
+    // Check proximity to samples
+    let nearestIdx = -1, nearestDist = Infinity;
+    samplePoints.forEach((s, idx) => {
+      const d = haversineMeters(curLat, curLon, s.lat, s.lon);
+      if (d < nearestDist) { nearestDist = d; nearestIdx = idx; }
+    });
+
+    // Message triggered either by proximity or by scheduled step
     const triggerRadius = adaptiveRadius(meters);
-    const now = Date.now();
 
-    // Gather all samples near current location (some might overlap)
-    const nearbySamples = samplePoints.filter(s => haversineMeters(curLat, curLon, s.lat, s.lon) <= triggerRadius);
-
-    // Pick the sample with the highest priority message (or first)
-    let msg = null;
-    for (const s of nearbySamples) {
-      const candidateMsg = messageForSample(s);
-      if (candidateMsg !== "Nothing interesting here... yawn.") {
-        msg = candidateMsg;
-        break; // show first interesting message nearby
-      }
-    }
-    // If no interesting nearby message, fallback to default
-    if (!msg) msg = "Just passing by...";
-
-    // Show popup if cooldown passed and message changed from last
-    if ((now - lastPopupTime) > popupCooldown && msg !== lastTriggeredSample) {
+    if (
+      nearestIdx !== lastTriggeredSample &&
+      nearestIdx !== -1 &&
+      nearestDist <= triggerRadius
+    ) {
+      // Show message based on sample flags
+      const sp = samplePoints[nearestIdx];
+      const msg = sensibleMessageForSample(sp);
       showAnime(msg, 3000);
-      lastPopupTime = now;
-      lastTriggeredSample = msg;  // store message text to avoid repeats
+      lastTriggeredSample = nearestIdx;
+    }
+    else if (nextTriggerIndex < triggerSteps.length && step === triggerSteps[nextTriggerIndex]) {
+      // Force message at scheduled steps - find closest sample at this t
+      let closestSample = null;
+      let closestDist = Infinity;
+      samplePoints.forEach(sp => {
+        const d = haversineMeters(curLat, curLon, sp.lat, sp.lon);
+        if (d < closestDist) {
+          closestDist = d;
+          closestSample = sp;
+        }
+      });
+      const msg = closestSample ? sensibleMessageForSample(closestSample) : "Enjoy your useless journey!";
+      showAnime(msg, 3000);
+      nextTriggerIndex++;
     }
 
     step++;
     if (step > steps) {
       clearInterval(simulateTimer);
       simulateTimer = null;
-      const endings = ["You made it along the useless line.","That was very efficient and pointless.","Next: a diagonal trip."];
-      showAnime(endings[Math.floor(Math.random()*endings.length)], 3000);
+      showAnime("You reached the destination! What a useless journey.", 4000);
     }
-  }, Math.max(20, Math.round(durationMs/steps)));
+  }, 25);
 }
 
+// Improved terrain-based messages
+function sensibleMessageForSample(sample) {
+  if (!sample || !sample.flags) return "Just empty air and useless road.";
 
-// choose message based on sample flags
-function messageForSample(sample) {
-  if (!sample || !sample.flags) return "Weird emptiness.";
   const f = sample.flags;
-  if (f.water || f.river) return "You go swim!";
-  if (f.peak) return "Climb time — bring boots!";
-  if (f.forest) return "Forest ahead — bears included.";
-  if (f.park) return "Park vibes — picnic when?";
-  if (f.highway) return "Cars! Dodge dramatically.";
-  if (f.railway) return "Railway — don't be the film extra.";
-  if (f.building) return "Urban jungle — stay alert.";
-  return "Nothing interesting here... yawn.";
+
+  // Priority messages based on terrain importance
+  if (f.water && f.river) return "You’re crossing water and river — watch your step or swim!";
+  if (f.water) return "Water nearby — maybe a boat ride?";
+  if (f.river) return "A river flows here — maybe a bridge?";
+  if (f.peak) return "Mountains ahead — get ready for the climb.";
+  if (f.forest) return "Forest surrounds you — watch for wildlife.";
+  if (f.park) return "A peaceful park — perfect for a useless picnic.";
+  if (f.highway) return "Busy highway — cross carefully!";
+  if (f.railway) return "Railway tracks — stay alert and don’t get caught.";
+  if (f.building) return "Passing through buildings — urban vibes.";
+
+  return "Just empty air and useless road.";
 }
 
-// ---------- Helpers ----------
-function haversineMeters(lat1, lon1, lat2, lon2) {
-  return haversine([lat1, lon1], [lat2, lon2]) * 1000;
-}
-function haversine(c1, c2){
-  const R = 6371; // km
-  const lat1 = c1[0] * Math.PI/180, lat2 = c2[0] * Math.PI/180;
-  const dLat = (c2[0]-c1[0]) * Math.PI/180;
-  const dLon = (c2[1]-c1[1]) * Math.PI/180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-// ---------- Draw features already implemented above ----------
-
-// ---------- Anime popup control ----------
-let animeTimer = null;
-function showAnime(text, ms=2500) {
-  const anime = el('anime');
-  const speech = el('speech');
-  speech.innerText = text;
-  anime.classList.remove('hidden');
-  requestAnimationFrame(() => anime.classList.add('show')); // animate
-  if (animeTimer) clearTimeout(animeTimer);
-  animeTimer = setTimeout(() => {
-    anime.classList.remove('show');
-    setTimeout(()=> anime.classList.add('hidden'), 300);
-  }, ms);
+// Generates message based on sample flags
+function generateMessageForSample(sample) {
+  if (sample.flags.water) return "Water everywhere... no bridge? Just swim.";
+  if (sample.flags.river) return "A river blocks your path. Did you bring a canoe?";
+  if (sample.flags.peak) return "Uh oh, a peak! Time to climb?";
+  if (sample.flags.forest) return "Deep forest here. Watch out for bears.";
+  if (sample.flags.park) return "A nice park, but no benches for you.";
+  if (sample.flags.highway) return "Highway nearby. Stay safe, no jaywalking.";
+  if (sample.flags.railway) return "Railway crossing ahead. Don't get hit.";
+  if (sample.flags.building) return "Passing through some buildings. Don't get lost.";
+  return "Just empty air and useless road.";
 }
 
 // ---------- Reset ----------
 function resetAll(){
-  if (startMarker) map.removeLayer(startMarker); startMarker=null;
-  if (destMarker) map.removeLayer(destMarker); destMarker=null;
-  if (lineLayer) map.removeLayer(lineLayer); lineLayer=null;
+  if (startMarker) { map.removeLayer(startMarker); startMarker=null; }
+  if (destMarker)  { map.removeLayer(destMarker); destMarker=null; }
+  if (lineLayer)   { map.removeLayer(lineLayer); lineLayer=null; }
   featuresLayer.clearLayers();
-  if (simulateMarker) map.removeLayer(simulateMarker); simulateMarker=null;
-  if (simulateTimer) { clearInterval(simulateTimer); simulateTimer=null; }
-  samplePoints = []; rawElements = [];
+  samplePoints = [];
+  rawElements = [];
+  if (simulateMarker) { map.removeLayer(simulateMarker); simulateMarker=null; }
+  if (simulateTimer) clearInterval(simulateTimer);
+  lastTriggeredSample = -1;
+  setInfo('distance', '—');
+  setInfo('bearing', '—');
   el('simulateBtn').disabled = true;
-  el('distance').textContent = "Distance: —"; el('bearing').textContent = "Bearing: —";
-  showToast("Reset.");
+  showAnime("", 0);
+  showToast("Reset done.", 1000);
 }
 
-// ---------- Toast ----------
-let toastTimer = null;
-function showToast(txt, time=2000){
-  const t = el('toast');
-  t.textContent = txt; t.classList.remove('hidden');
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> t.classList.add('hidden'), time);
-}
+// ---------- Utility helpers ----------
+function haversineMeters(lat1, lon1, lat2, lon2){
+  const R = 6371e3;
+  const phi1 = lat1 * Math.PI/180;
+  const phi2 = lat2 * Math.PI/180;
+  const dPhi = (lat2-lat1) * Math.PI/180;
+  const dLambda = (lon2-lon1) * Math.PI/180;
 
-// ---------- Bearing ----------
-function calculateBearing(lat1, lon1, lat2, lon2) {
-  const toRad = d => d * Math.PI/180;
-  const toDeg = r => r * 180/Math.PI;
-  const φ1 = toRad(lat1), φ2 = toRad(lat2);
-  const λ1 = toRad(lon1), λ2 = toRad(lon2);
-  const y = Math.sin(λ2-λ1) * Math.cos(φ2);
-  const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
-  let θ = Math.atan2(y,x);
-  θ = (toDeg(θ) + 360) % 360;
+  const a = Math.sin(dPhi/2) * Math.sin(dPhi/2) +
+            Math.cos(phi1)*Math.cos(phi2) *
+            Math.sin(dLambda/2)*Math.sin(dLambda/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R*c;
+}
+function calculateBearing(lat1, lon1, lat2, lon2){
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const y = Math.sin(Δλ) * Math.cos(φ2);
+  const x = Math.cos(φ1)*Math.sin(φ2) -
+            Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+  let θ = Math.atan2(y, x);
+  θ = (θ*180/Math.PI + 360) % 360; // in degrees
   return θ;
+}
+
+// ---------- UI helpers ----------
+
+function showToast(msg, duration=1500){
+  const t = el('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.remove('hidden');
+  if (duration > 0){
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.add('hidden'), duration);
+  }
+}
+
+// Shows anime bubble with message
+let animeTimeout;
+function showAnime(msg, duration=2000){
+  const a = el('anime');
+  const speech = el('speech');
+  if (!a || !speech) return;
+  if (!msg) {
+    a.classList.remove('show');
+    speech.textContent = "";
+    return;
+  }
+  speech.textContent = msg;
+  a.classList.add('show');
+  clearTimeout(animeTimeout);
+  animeTimeout = setTimeout(() => {
+    a.classList.remove('show');
+  }, duration);
+}
+
+// Update HUD info
+function setInfo(id, text) {
+  const container = el(id);
+  if (!container) return;
+  const valueSpan = container.querySelector('.value');
+  if (valueSpan) valueSpan.textContent = text;
 }

@@ -16,18 +16,42 @@ body, html { margin: 0; height: 100%; background: #f6f7fb; }
 
 #map { height: calc(100vh - 120px); margin: 8px 12px 0 12px; border-radius:8px; overflow:hidden; }
 
+/* Updated HUD style mimicking Google Maps */
 #hud {
-  display:flex;
-  gap:18px;
-  align-items:center;
-  padding:10px 14px;
-  background:#fff;
-  border-top:1px solid #e5e7eb;
-  font-size:14px;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  padding: 12px 16px;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+  font-family: 'Roboto', Arial, sans-serif;
+  font-size: 15px;
+  color: #202124;
   margin: 0 12px 12px 12px;
   border-radius: 0 0 8px 8px;
+  box-shadow: 0 1px 3px rgb(60 64 67 / 0.3);
 }
-#hud > div { color:#111827; }
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+.info-item .label {
+  font-weight: 500;
+  font-size: 12px;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+
+.info-item .value {
+  font-weight: 700;
+  font-size: 17px;
+  color: #202124;
+}
 
 /* Anime popup */
 #anime {

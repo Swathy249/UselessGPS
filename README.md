@@ -61,14 +61,16 @@ Project Documentation
 For Software:
 Screenshots (Add at least 3)
 
-https://github.com/Swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050421.png
-https://github.com/Swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050254.png
-https://github.com/Swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050325.png
-
+![Screenshot 1](https://github.com/swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050421.png)
 The infamous “useless” straight-line path ignoring terrain.
-
-
+![Screenshot 2](https://github.com/swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050524.png)
+![Screenshot 3](https://github.com/swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050525.png)
 Our sarcastic anime guide mocking your route.
+
+
+
+
+
 
 Diagrams
 

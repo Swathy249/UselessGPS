@@ -63,8 +63,8 @@ Screenshots (Add at least 3)
 
 ## Screenshots
 ![Screenshot 1](https://raw.githubusercontent.com/swathy249/UselessGPS/main/Screenshot%202025-08-09%20050421.png)
-![Screenshot 2](https://raw.githubusercontent.com/swathy249/UselessGPS/main/Screenshot%202025-08-09%20050524.png)
-![Screenshot 3](https://raw.githubusercontent.com/swathy249/UselessGPS/main/Screenshot%202025-08-09%20050525.png)
+![Screenshot 2](https://github.com/Swathy249/UselessGPS/blob/main/Screenshot%202025-08-09%20050254.png)
+![Screenshot 3](Screenshot 2025-08-09 050325.png)
 
 The infamous “useless” straight-line path ignoring terrain.  
 Our sarcastic anime guide mocking your route.
